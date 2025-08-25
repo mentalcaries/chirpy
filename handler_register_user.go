@@ -17,12 +17,12 @@ type User struct {
 	UpdatedAt time.Time `json:"updated_at"`
 	Email     string    `json:"email"`
 	Token	  string 	`json:"token,omitempty"`
+	RefreshToken string	`json:"refresh_token,omitempty"`
 }
 
 type userParams struct {
 	Email string `json:"email"`
 	Password string `json:"password"`
-	ExpiresIn int `json:"expires_in_seconds"`
 }
 
 func (cfg *apiConfig) handlerCreateUser(w http.ResponseWriter, r *http.Request) {
@@ -66,44 +66,3 @@ func (cfg *apiConfig) handlerCreateUser(w http.ResponseWriter, r *http.Request) 
 	respondWithJSON(w, http.StatusCreated, userRes)
 }
 
-func (cfg *apiConfig)handlerLoginUser(w http.ResponseWriter, r *http.Request) {
-	decoder := json.NewDecoder(r.Body)
-	params := userParams{}
-
-	err := decoder.Decode(&params)
-	if err != nil {
-		respondWithError(w, http.StatusBadRequest, "Invalid request", err)
-		return
-	}
-
-	user, err := cfg.DBQueries.GetUserByEmail(r.Context(), params.Email)
-	if err != nil {
-		respondWithError(w, http.StatusNotFound, "Invalid credentials", err)
-		return
-	}
-
-	err = auth.CheckPasswordHash(params.Password, user.HashedPassword)
-	if err != nil {
-		respondWithError(w, http.StatusUnauthorized, "Incorrect email or password", err)
-		return
-	}
-
-	if params.ExpiresIn == 0 || params.ExpiresIn > int(time.Second * 3600){
-		params.ExpiresIn = int(time.Second * 3600)
-	}
-
-	token, err := auth.MakeJWT(user.ID, cfg.jwtSecret, time.Duration(params.ExpiresIn))
-	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "could not generate token", err)
-		return
-	}
-
-	respondWithJSON(w, http.StatusOK, User{
-		ID: user.ID,
-		CreatedAt: user.CreatedAt,
-		UpdatedAt: user.UpdatedAt,
-		Email: user.Email,
-		Token: token,
-	})
-
-}
