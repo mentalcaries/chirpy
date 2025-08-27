@@ -67,6 +67,5 @@ func extractRefreshToken(headers http.Header) (string, error) {
 	}
 	token := strings.Replace(authHeader, "Bearer ", "", 1)
 
-    fmt.Println(token)
 	return token, nil
 }

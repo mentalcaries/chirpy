@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -35,7 +34,6 @@ func (cfg *apiConfig) handlerCreateChirp(w http.ResponseWriter, req *http.Reques
     }
 
     userId, err := auth.ValidateJWT(token, cfg.jwtSecret)
-    fmt.Println(userId)
     if err != nil {
         respondWithError(w, http.StatusUnauthorized, "Invalid user", err)
         return
