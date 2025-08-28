@@ -3,10 +3,10 @@ package main
 import (
 	"database/sql"
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"github.com/google/uuid"
+	"github.com/mentalcaries/chirpy/internal/auth"
 )
 
 type EventWebhook struct{
@@ -17,12 +17,17 @@ type EventWebhook struct{
 }
 
 func (cfg *apiConfig)handlerUpgradeUserSubscription(w http.ResponseWriter, r *http.Request){
-    decoder := json.NewDecoder(r.Body)
+    apiKey, err := auth.GetAPIKey(r.Header)
+
+    if err != nil || apiKey != cfg.apiKey {
+        respondWithError(w, http.StatusUnauthorized, "Invalid provider key", err)
+        return
+    }
+
     
+    decoder := json.NewDecoder(r.Body)
     reqBody := EventWebhook{}
     decoder.Decode(&reqBody)
-
-    fmt.Println(reqBody)
 
     if reqBody.Event != "user.upgraded" {
         respondWithJSON(w, http.StatusNoContent, nil)
@@ -41,6 +46,6 @@ func (cfg *apiConfig)handlerUpgradeUserSubscription(w http.ResponseWriter, r *ht
             return
         }
 
-        respondWithJSON(w, http.StatusNoContent, nil)
+        w.WriteHeader(http.StatusNoContent)
     }
 }
